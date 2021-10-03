@@ -1,5 +1,5 @@
 {
-  "infiniteLoopProtection": true,
+  "infiniteLoopProtection": false,
   "hardReloadOnChange": true,
   "view": "browser"
 }

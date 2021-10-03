@@ -1,7 +1,3 @@
-/**
- * Author: Thomas SAULAY
- */
-
 import Phaser from "phaser";
 
 import SceneGameOver from "./js/SceneGameOver";
@@ -10,9 +6,14 @@ import SceneMain from "./js/SceneMain";
 
 const config = {
   type: Phaser.AUTO,
-  width: 800,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_VERTICALLY
+  },
+  width: 1600,
   height: 600,
   backgroundColor: "#85a987",
+  //"render.transparent": true,
   parent: "game-container",
   physics: {
     default: "arcade"
