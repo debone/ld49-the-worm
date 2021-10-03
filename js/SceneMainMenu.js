@@ -15,6 +15,7 @@ export default class SceneMainMenu extends Phaser.Scene {
     this.load.image("player", "assets/sprites/player.png");
     this.load.image("fremen", "assets/sprites/fremen.png");
     this.load.image("cave", "assets/sprites/cave.png");
+    this.load.image("spark", "assets/sprites/spark.png");
   }
 
   create() {
@@ -40,12 +41,43 @@ export default class SceneMainMenu extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setVisible(false);
 
-    this.player = this.add.group({
-      key: "player",
-      x: width / 2,
-      y: height / 2,
-      frameQuantity: 100
+    this.player = this.add
+      .group({
+        key: "player",
+        x: width / 2,
+        y: height / 2,
+        frameQuantity: 100
+      })
+      .setTint(0x4a1439);
+
+    this.particles = this.add.particles("spark");
+    this.emitterBottom = this.particles.createEmitter({
+      alpha: { start: 1, end: 0 },
+      scale: { start: 0.5, end: 2.5 },
+      //tint: { start: 0xff945e, end: 0xff945e },
+      speed: 10,
+
+      angle: { min: -5, max: 10 },
+      rotate: { min: -180, max: 180 },
+      lifespan: { min: 2000, max: 2100 },
+
+      frequency: 11
     });
+
+    this.emitterTop = this.particles.createEmitter({
+      alpha: { start: 1, end: 0 },
+      scale: { start: 0.5, end: 2.5 },
+      //tint: { start: 0xff945e, end: 0xff945e },
+      speed: 10,
+
+      angle: { min: -5, max: 10 },
+      rotate: { min: -180, max: 180 },
+      lifespan: { min: 2000, max: 2100 },
+
+      frequency: 11
+    });
+
+    //this.emitter.startFollow(this.player);
 
     this.input.keyboard.on("keydown", (event) => {
       this.scene.start("SceneMain");
@@ -98,6 +130,9 @@ export default class SceneMainMenu extends Phaser.Scene {
 
     this.playerPos.add(this.playerAcc);
 
+    this.emitterTop.setPosition(this.playerPos.x, this.playerPos.y - 9);
+    this.emitterBottom.setPosition(this.playerPos.x, this.playerPos.y + 9);
+
     if (this.playerPos.x > this.cameras.main.worldView.width * 1.5) {
       this.playerPos.x = -200;
       this.playerPos.y = this.height - 250 * Math.random();
@@ -132,7 +167,7 @@ export default class SceneMainMenu extends Phaser.Scene {
     for (let curr = this.cameras.main.worldView.x - 1000; curr < maxX; curr++) {
       let terrain = this.calculateHeight(curr);
 
-      this.graphics.lineStyle(3, 0xb5883b, 1);
+      this.graphics.lineStyle(3, 0xc18e59, 1);
       this.graphics.lineBetween(curr, terrain, curr, maxY);
     }
   }

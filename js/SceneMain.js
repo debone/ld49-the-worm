@@ -55,16 +55,45 @@ export class SceneMain extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
-    this.player = this.add.group({
-      key: "player",
-      x: 400,
-      y: height,
-      frameQuantity: 100
-    });
+    this.player = this.add
+      .group({
+        key: "player",
+        x: 400,
+        y: height,
+        frameQuantity: 100
+      })
+      .setTint(0x4a1439);
 
     this.playerPos = new Phaser.Math.Vector2(400, height);
     this.playerVel = new Phaser.Math.Vector2(0, 0);
     this.playerAcc = new Phaser.Math.Vector2(0, 0);
+
+    this.particles = this.add.particles("spark");
+    this.emitterBottom = this.particles.createEmitter({
+      alpha: { start: 1, end: 0 },
+      scale: { start: 0.5, end: 2.5 },
+      //tint: { start: 0xff945e, end: 0xff945e },
+      speed: 10,
+
+      angle: { min: -5, max: 10 },
+      rotate: { min: -180, max: 180 },
+      lifespan: { min: 2000, max: 2100 },
+
+      frequency: 11
+    });
+
+    this.emitterTop = this.particles.createEmitter({
+      alpha: { start: 1, end: 0 },
+      scale: { start: 0.5, end: 2.5 },
+      //tint: { start: 0xff945e, end: 0xff945e },
+      speed: 10,
+
+      angle: { min: -5, max: 10 },
+      rotate: { min: -180, max: 180 },
+      lifespan: { min: 2000, max: 2100 },
+
+      frequency: 11
+    });
 
     this.cameras.main.startFollow(this.playerPos);
     //this.cameras.main.followOffset.set(-300, 0);
@@ -708,7 +737,7 @@ export class SceneMain extends Phaser.Scene {
         this.graphics.lineStyle(3, 0x4b83c0, 1);
         this.graphics.lineBetween(curr, water, curr, terrain);
       }
-      this.graphics.lineStyle(3, 0xb5883b, 1);
+      this.graphics.lineStyle(3, 0xc18e59, 1);
       this.graphics.lineBetween(curr, terrain, curr, maxY);
     }
   }
@@ -739,10 +768,12 @@ export class SceneMain extends Phaser.Scene {
   }
 
   gameOver() {
-    this.scene.run("SceneGameOver");
-    this.cameras.main.stopFollow();
-    this.gameIsOver = true;
-    this.missionMarker.setText("");
+    if (!this.gameIsOver) {
+      this.scene.run("SceneGameOver");
+      this.cameras.main.stopFollow();
+      this.gameIsOver = true;
+      this.missionMarker.setText("");
+    }
   }
 
   renderMarker() {
@@ -785,9 +816,11 @@ export class SceneMain extends Phaser.Scene {
   }
 
   update(time, delta) {
-    this.text.setText(parseInt(this.playerPos.x, 10));
-    this.text.x = this.cameras.main.scrollX + this.width / 2;
-    this.text.y = 100;
+    if (this.debug) {
+      this.text.setText(parseInt(this.playerPos.x, 10));
+      this.text.x = this.cameras.main.scrollX + this.width / 2;
+      this.text.y = 100;
+    }
 
     //Gravity
     this.playerAcc.y += 0.05;
@@ -798,6 +831,9 @@ export class SceneMain extends Phaser.Scene {
       this.bounce(this.playerPos, this.playerAcc);
     }
     this.playerPos.add(this.playerAcc);
+
+    this.emitterTop.setPosition(this.playerPos.x, this.playerPos.y - 9);
+    this.emitterBottom.setPosition(this.playerPos.x, this.playerPos.y + 9);
 
     this.graphics.clear();
 

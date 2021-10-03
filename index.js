@@ -16,7 +16,7 @@ const config = {
   },
   width: 1600,
   height: 600,
-  backgroundColor: "#85a987",
+  backgroundColor: "#d1de8f",
   //"render.transparent": true,
   parent: "game-container",
   physics: {
