@@ -6,20 +6,29 @@ import Phaser from "phaser";
  * x Water collision
  * missions
  *  x saddokar (just hit, ez)
- *  fremen (three states, ez, the counter underground, hard)
+ *  x fremen (three states, ez, the counter underground, hard)
  *  chopters (just hit, closeness detection, can fly)
  *  ending
  * x indication for missions
  * x intro
  * x help texts
+ *
+ * x losing frame
+ * x points
+ * x ending
+ * x more missions
  * --- end---
- * move help texts outside of camera rotation (new scene)
+ * x move help texts outside of camera rotation (new scene)
  * nice dunes
  * particles
  * wind/sand on sky
  */
 
-export default class SceneMain extends Phaser.Scene {
+let missionTitle = "";
+let missionDescription = "";
+let melange = 100;
+
+export class SceneMain extends Phaser.Scene {
   constructor() {
     super({ key: "SceneMain" });
   }
@@ -27,6 +36,8 @@ export default class SceneMain extends Phaser.Scene {
   preload() {}
 
   create() {
+    this.scene.run("SceneUI");
+
     this.noise = this.plugins.get("rexperlinplugin").add(2);
 
     const { width, height } = this.sys.game.config;
@@ -36,7 +47,7 @@ export default class SceneMain extends Phaser.Scene {
     this.graphics = this.add.graphics();
 
     this.text = this.add
-      .text(width, height, "main\nscene", {
+      .text(width, height, "", {
         font: "15vw courier",
         color: "white"
       })
@@ -59,14 +70,18 @@ export default class SceneMain extends Phaser.Scene {
     //this.cameras.main.followOffset.set(-300, 0);
 
     this.activeMission = 0;
-    this.missionMarkerGoLeft = this.add.text(100, height, "<-", {
-      font: "25vw times new roman",
-      color: "white"
-    });
-    this.missionMarkerGoRight = this.add.text(width - 100, height, "->", {
-      font: "25vw times new roman",
-      color: "white"
-    });
+    this.missionMarkerGoLeft = this.add
+      .text(100, height, "<-", {
+        font: "25vw times new roman",
+        color: "white"
+      })
+      .setVisible(false);
+    this.missionMarkerGoRight = this.add
+      .text(width - 100, height, "->", {
+        font: "25vw times new roman",
+        color: "white"
+      })
+      .setVisible(false);
 
     this.missionMarker = this.add
       .text(width, height, "invader ->", {
@@ -76,18 +91,8 @@ export default class SceneMain extends Phaser.Scene {
       .setRotation(-Math.PI / 2)
       .setOrigin(1, 0.5);
 
-    this.missionTitle = this.add
-      .text(this.width, 100, "Mission #1", {
-        font: "20vh courier",
-        color: "white"
-      })
-      .setOrigin(1, 0);
-    this.missionDescription = this.add
-      .text(this.width, 220, "Hunt the invaders!", {
-        font: "15vh courier",
-        color: "white"
-      })
-      .setOrigin(1, 0);
+    missionTitle = "Mission #1";
+    missionDescription = "Hunt the invaders!";
 
     this.missions = {
       "0": {
@@ -96,12 +101,13 @@ export default class SceneMain extends Phaser.Scene {
         missionDescription: "Hunt the invaders!",
         active: true,
         showMarker: true,
+        melange: 50,
         pos: new Phaser.Math.Vector2(100, this.calculateHeight(100)),
         gameObj: this.add.circle(100, this.calculateHeight(100), 10, 0x000000),
         start: () => {},
         update: () => {
           if (this.missions[0].active) {
-            this.missions[0].pos.x += 2;
+            this.missions[0].pos.x += 1;
             this.missions[0].pos.y = this.calculateOverWaterHeight(
               this.missions[0].pos.x
             );
@@ -124,20 +130,21 @@ export default class SceneMain extends Phaser.Scene {
         missionDescription: "Continue hunting the invaders!",
         active: false,
         showMarker: true,
-        pos: new Phaser.Math.Vector2(100, this.calculateHeight(100)),
+        melange: 75,
+        pos: new Phaser.Math.Vector2(5000, this.calculateHeight(5000)),
         gameObj: {},
         start: () => {
           this.missionMarker.setText("->");
           this.missions[1].gameObj = this.add.circle(
-            100,
-            this.calculateHeight(100),
+            5000,
+            this.calculateHeight(5000),
             10,
             0x000000
           );
         },
         update: () => {
           if (this.missions[1].active) {
-            this.missions[1].pos.x -= 2;
+            this.missions[1].pos.x -= 1.5;
             this.missions[1].pos.y = this.calculateOverWaterHeight(
               this.missions[1].pos.x
             );
@@ -160,19 +167,20 @@ export default class SceneMain extends Phaser.Scene {
         missionDescription: "The last invaders group are running away",
         active: false,
         showMarker: true,
-        pos: new Phaser.Math.Vector2(100, this.calculateHeight(100)),
+        melange: 100,
+        pos: new Phaser.Math.Vector2(-10000, this.calculateHeight(-10000)),
         gameObj: {},
         start: () => {
           this.missions[2].gameObj = this.add.circle(
-            100,
-            this.calculateHeight(100),
+            -10000,
+            this.calculateHeight(-10000),
             10,
             0x000000
           );
         },
         update: () => {
           if (this.missions[2].active) {
-            this.missions[2].pos.x -= 2;
+            this.missions[2].pos.x += 2.5;
             this.missions[2].pos.y = this.calculateOverWaterHeight(
               this.missions[2].pos.x
             );
@@ -189,28 +197,419 @@ export default class SceneMain extends Phaser.Scene {
           this.missions[2].gameObj.destroy();
         }
       },
-      "3": {},
-      "4": {},
-      "5": {},
+      "3": {
+        missionTitle: "Mission #4",
+        missionDescription: "Give a ride to the natives",
+        active: false,
+        showMarker: true,
+        melange: 300,
+        pos: new Phaser.Math.Vector2(0, this.calculateHeight(0)),
+        fremen: new Phaser.Math.Vector2(0, this.calculateHeight(0)),
+        goal: new Phaser.Math.Vector2(-1500, this.calculateHeight(-1500)),
+        gameObj: {},
+        step: 0,
+        life: 100,
+        lifeObj: {},
+        lifeBuffer: 75,
+        goalObj: {},
+        start: () => {
+          this.missions[3].gameObj = this.add.group({
+            key: "fremen",
+            x: 0,
+            y: this.calculateHeight(0),
+            frameQuantity: 5
+          });
+
+          this.missions[3].goalObj = this.add.image(
+            -1500,
+            this.calculateHeight(-1500),
+            "cave"
+          );
+          this.missions[3].goalObj.scale = 3;
+
+          this.missions[3].lifeObj = this.add
+            .rectangle(0, this.calculateHeight(0) + 10, 100, 10, 0x00ff00)
+            .setVisible(false)
+            .setOrigin(0.5, 0.5);
+        },
+        update: () => {
+          if (this.missions[3].active) {
+            if (this.missions[3].step === 0) {
+              // They are moving on sand
+              this.missions[3].pos.x += 2 * Math.random();
+              this.missions[3].pos.y = this.calculateOverWaterHeight(
+                this.missions[3].pos.x
+              );
+              this.missions[3].gameObj.x = this.missions[3].pos.x;
+              this.missions[3].gameObj.y = this.missions[3].pos.y;
+              this.missions[3].fremen.x = this.missions[3].pos.x;
+              this.missions[3].fremen.y = this.missions[3].pos.y;
+            } else if (this.missions[3].step === 1) {
+              this.missions[3].fremen.x = this.playerPos.x;
+              this.missions[3].fremen.y = this.playerPos.y - 10;
+              // They are riding you
+              this.missions[3].gameObj.x = this.playerPos.x;
+              this.missions[3].gameObj.y = this.playerPos.y - 10;
+
+              if (
+                this.hitsDeepTerrain(this.playerPos.x, this.playerPos.y, 40)
+              ) {
+                this.missions[3].lifeBuffer -= 1;
+                this.missions[3].lifeObj.setFillStyle(0xff0000);
+              } else {
+                this.missions[3].lifeObj.setFillStyle(0x00ff00);
+              }
+
+              if (this.missions[3].lifeBuffer < 0) {
+                this.missions[3].lifeBuffer = 100;
+                this.missions[3].life -= 10;
+                this.missions[3].melange -= 20;
+                this.missions[3].lifeObj.width = this.missions[3].life;
+              }
+
+              if (this.missions[3].life <= 0) {
+                this.startMission(4, 3);
+              }
+            }
+
+            if (this.missions[3].active) {
+              Phaser.Actions.ShiftPosition(
+                this.missions[3].gameObj.getChildren(),
+                this.missions[3].fremen.x,
+                this.missions[3].fremen.y
+              );
+            }
+
+            this.missions[3].goal.y = this.calculateHeight(-1500);
+            this.missions[3].goalObj.y = this.calculateHeight(-1500);
+
+            this.missions[3].lifeObj.x = this.missions[3].gameObj.x;
+            this.missions[3].lifeObj.y = this.missions[3].gameObj.y - 50;
+          }
+        },
+        success: (playerPos) => {
+          if (
+            this.missions[3].step === 0 &&
+            playerPos.fuzzyEquals(this.missions[3].pos, 10)
+          ) {
+            this.missions[3].step = 1;
+            missionDescription =
+              "Take them to the assigned destination\nYou can't leave the surface\n for long";
+            this.missions[3].lifeObj.setVisible(true);
+            this.missions[3].pos.x = this.missions[3].goal.x;
+            this.missions[3].pos.y = this.missions[3].goal.y;
+          }
+          if (
+            this.missions[3].step === 1 &&
+            playerPos.fuzzyEquals(this.missions[3].goal, 50)
+          ) {
+            this.startMission(4, 3);
+          }
+        },
+        clean: () => {
+          this.missions[3].gameObj.destroy(true);
+          this.missions[3].lifeObj.destroy();
+          this.missions[3].goalObj.destroy();
+        }
+      },
+      "4": {
+        missionTitle: "Mission #5",
+        missionDescription:
+          "Another group of natives need your help \nThey are a bit more sensitive to depths ",
+        //active: false,
+        active: false,
+        showMarker: true,
+        melange: 400,
+        pos: new Phaser.Math.Vector2(0, this.calculateHeight(0)),
+        fremen: new Phaser.Math.Vector2(0, this.calculateHeight(0)),
+        goal: new Phaser.Math.Vector2(9200, this.calculateHeight(9200)),
+        gameObj: {},
+        step: 0,
+        life: 100,
+        lifeObj: {},
+        lifeBuffer: 50,
+        goalObj: {},
+        start: () => {
+          this.missions[4].gameObj = this.add.group({
+            key: "fremen",
+            x: 0,
+            y: this.calculateHeight(0),
+            frameQuantity: 5
+          });
+
+          this.missions[4].goalObj = this.add.image(
+            this.missions[4].goal.x,
+            this.missions[4].goal.y,
+            "cave"
+          );
+          this.missions[4].goalObj.scale = 3;
+
+          this.missions[4].lifeObj = this.add
+            .rectangle(0, this.calculateHeight(0) + 10, 100, 10, 0x00ff00)
+            .setVisible(false)
+            .setOrigin(0.5, 0.5);
+        },
+        update: () => {
+          if (this.missions[4].active) {
+            if (this.missions[4].step === 0) {
+              // They are moving on sand
+              this.missions[4].pos.x += 2 * Math.random();
+              this.missions[4].pos.y = this.calculateOverWaterHeight(
+                this.missions[4].pos.x
+              );
+              this.missions[4].gameObj.x = this.missions[4].pos.x;
+              this.missions[4].gameObj.y = this.missions[4].pos.y;
+              this.missions[4].fremen.x = this.missions[4].pos.x;
+              this.missions[4].fremen.y = this.missions[4].pos.y;
+            } else if (this.missions[4].step === 1) {
+              this.missions[4].fremen.x = this.playerPos.x;
+              this.missions[4].fremen.y = this.playerPos.y - 10;
+              // They are riding you
+              this.missions[4].gameObj.x = this.playerPos.x;
+              this.missions[4].gameObj.y = this.playerPos.y - 10;
+
+              if (
+                this.hitsDeepTerrain(this.playerPos.x, this.playerPos.y, 20)
+              ) {
+                this.missions[4].lifeBuffer -= 1;
+                this.missions[4].lifeObj.setFillStyle(0xff0000);
+              } else {
+                this.missions[4].lifeObj.setFillStyle(0x00ff00);
+              }
+
+              if (this.missions[4].lifeBuffer < 0) {
+                this.missions[4].lifeBuffer = 100;
+                this.missions[4].life -= 10;
+                this.missions[4].melange -= 20;
+                this.missions[4].lifeObj.width = this.missions[4].life;
+              }
+
+              if (this.missions[4].life <= 0) {
+                this.startMission(5, 4);
+              }
+            }
+
+            if (this.missions[4].active) {
+              Phaser.Actions.ShiftPosition(
+                this.missions[4].gameObj.getChildren(),
+                this.missions[4].fremen.x,
+                this.missions[4].fremen.y
+              );
+            }
+
+            this.missions[4].goal.y = this.calculateHeight(9200);
+            this.missions[4].goalObj.y = this.calculateHeight(9200);
+
+            this.missions[4].lifeObj.x = this.missions[4].gameObj.x;
+            this.missions[4].lifeObj.y = this.missions[4].gameObj.y - 50;
+          }
+        },
+        success: (playerPos) => {
+          if (
+            this.missions[4].step === 0 &&
+            playerPos.fuzzyEquals(this.missions[4].pos, 10)
+          ) {
+            this.missions[4].step = 1;
+            missionDescription =
+              "Take them to the assigned destination\nYou can't leave the surface\nlevels for long";
+            this.missions[4].lifeObj.setVisible(true);
+            this.missions[4].pos.x = this.missions[4].goal.x;
+            this.missions[4].pos.y = this.missions[4].goal.y;
+          }
+          if (
+            this.missions[4].step === 1 &&
+            playerPos.fuzzyEquals(this.missions[4].goal, 50)
+          ) {
+            this.startMission(5, 4);
+          }
+        },
+        clean: () => {
+          this.missions[4].gameObj.destroy(true);
+          this.missions[4].lifeObj.destroy();
+          this.missions[4].goalObj.destroy();
+        }
+      },
+      "5": {
+        missionTitle: "Mission #6",
+        missionDescription:
+          "The last group of natives need your help \nThey just want a fun ride ",
+        //active: false,
+        active: false,
+        showMarker: true,
+        melange: 400,
+        pos: new Phaser.Math.Vector2(4000, this.calculateHeight(4000)),
+        fremen: new Phaser.Math.Vector2(4000, this.calculateHeight(4000)),
+        goal: new Phaser.Math.Vector2(-15000, this.calculateHeight(-15000)),
+        gameObj: {},
+        step: 0,
+        life: 100,
+        lifeObj: {},
+        lifeBuffer: 500,
+        goalObj: {},
+        start: () => {
+          this.missions[5].gameObj = this.add.group({
+            key: "fremen",
+            x: 4000,
+            y: this.calculateHeight(4000),
+            frameQuantity: 5
+          });
+
+          this.missions[5].goalObj = this.add.image(
+            this.missions[5].goal.x,
+            this.missions[5].goal.y,
+            "cave"
+          );
+          this.missions[5].goalObj.scale = 3;
+
+          this.missions[5].lifeObj = this.add
+            .rectangle(0, this.calculateHeight(0) + 10, 100, 10, 0x00ff00)
+            .setVisible(false)
+            .setOrigin(0.5, 0.5);
+        },
+        update: () => {
+          if (this.missions[5].active) {
+            if (this.missions[5].step === 0) {
+              // They are moving on sand
+              this.missions[5].pos.x += 2 * Math.random();
+              this.missions[5].pos.y = this.calculateOverWaterHeight(
+                this.missions[5].pos.x
+              );
+              this.missions[5].gameObj.x = this.missions[5].pos.x;
+              this.missions[5].gameObj.y = this.missions[5].pos.y;
+              this.missions[5].fremen.x = this.missions[5].pos.x;
+              this.missions[5].fremen.y = this.missions[5].pos.y;
+            } else if (this.missions[5].step === 1) {
+              this.missions[5].fremen.x = this.playerPos.x;
+              this.missions[5].fremen.y = this.playerPos.y - 10;
+              // They are riding you
+              this.missions[5].gameObj.x = this.playerPos.x;
+              this.missions[5].gameObj.y = this.playerPos.y - 10;
+
+              if (
+                this.hitsDeepTerrain(this.playerPos.x, this.playerPos.y, 100)
+              ) {
+                this.missions[5].lifeBuffer -= 1;
+                this.missions[5].lifeObj.setFillStyle(0xff0000);
+              } else {
+                this.missions[5].lifeObj.setFillStyle(0x00ff00);
+              }
+
+              if (this.missions[5].lifeBuffer < 0) {
+                this.missions[5].lifeBuffer = 100;
+                this.missions[5].life -= 10;
+                this.missions[5].melange -= 20;
+                this.missions[5].lifeObj.width = this.missions[5].life;
+              }
+
+              if (this.missions[5].life <= 0) {
+                this.startMission(8, 5);
+              }
+            }
+
+            if (this.missions[5].active) {
+              Phaser.Actions.ShiftPosition(
+                this.missions[5].gameObj.getChildren(),
+                this.missions[5].fremen.x,
+                this.missions[5].fremen.y
+              );
+            }
+
+            this.missions[5].goal.y = this.calculateHeight(-15000);
+            this.missions[5].goalObj.y = this.calculateHeight(-15000);
+
+            this.missions[5].lifeObj.x = this.missions[5].gameObj.x;
+            this.missions[5].lifeObj.y = this.missions[5].gameObj.y - 50;
+          }
+        },
+        success: (playerPos) => {
+          if (
+            this.missions[5].step === 0 &&
+            playerPos.fuzzyEquals(this.missions[5].pos, 10)
+          ) {
+            this.missions[5].step = 1;
+            missionDescription =
+              "Take them to the assigned destination\nYou can't leave the surface\nlevels for long";
+            this.missions[5].lifeObj.setVisible(true);
+            this.missions[5].pos.x = this.missions[5].goal.x;
+            this.missions[5].pos.y = this.missions[5].goal.y;
+          }
+          if (
+            this.missions[5].step === 1 &&
+            playerPos.fuzzyEquals(this.missions[5].goal, 50)
+          ) {
+            this.startMission(8, 5);
+          }
+        },
+        clean: () => {
+          this.missions[5].gameObj.destroy(true);
+          this.missions[5].lifeObj.destroy();
+          this.missions[5].goalObj.destroy();
+        }
+      },
       "6": {},
       "7": {},
-      "8": {}
+      "8": {
+        // Paul
+        missionTitle: "Mission #9",
+        missionDescription:
+          "Now that you helped the planet \nYou can finally join HIM ",
+        active: false,
+        showMarker: false,
+
+        melange: 500,
+        pos: new Phaser.Math.Vector2(-0, this.calculateHeight(-0)),
+        gameObj: {},
+        start: () => {
+          this.missions[8].gameObj = this.add.star(
+            0,
+            this.calculateHeight(0),
+            5,
+            24,
+            48,
+            0xffffff
+          );
+        },
+        update: (time) => {
+          if (this.missions[8].active) {
+            this.missions[8].gameObj.scale = 1 + 0.1 * Math.sin(time / 100);
+            this.missions[8].gameObj.y = this.calculateHeight(0);
+          }
+        },
+        success: (playerPos) => {
+          if (playerPos.fuzzyEquals(this.missions[8].pos, 50)) {
+            melange += 500;
+            this.endGame();
+          }
+        },
+        clean: () => {
+          this.missions[8].gameObj.destroy();
+        }
+      }
     };
 
+    this.missions[0].start();
+
+    this.gameIsOver = false;
     this.debug = false;
   }
 
   startMission(missionStarted, missionFinished) {
-    this.missions[missionFinished].clean();
     this.missions[missionFinished].active = false;
+    this.missions[missionFinished].clean();
+    melange += this.missions[missionFinished].melange;
 
     this.missions[missionStarted].start();
     this.missions[missionStarted].active = true;
     this.activeMission = missionStarted;
-    this.missionTitle.setText(this.missions[missionStarted].missionTitle);
-    this.missionDescription.setText(
-      this.missions[missionStarted].missionDescription
-    );
+    missionTitle = this.missions[missionStarted].missionTitle;
+    missionDescription = this.missions[missionStarted].missionDescription;
+  }
+
+  endGame() {
+    this.scene.run("SceneGameWon");
+    this.cameras.main.stopFollow();
+    this.gameIsOver = true;
+    this.missionMarker.setText("");
   }
 
   bounce(pos, acc) {
@@ -243,6 +642,10 @@ export default class SceneMain extends Phaser.Scene {
 
   hitsTerrain(x, y) {
     return this.calculateHeight(x) < y;
+  }
+
+  hitsDeepTerrain(x, y, depth) {
+    return this.calculateHeight(x) < y - depth;
   }
 
   easeOut(x) {
@@ -315,10 +718,10 @@ export default class SceneMain extends Phaser.Scene {
     if (this.debug) {
       this.cameras.main.setZoom(0.15, 0.15);
     } else {
-      this.cameras.main.setZoom(0.25, 0.25);
-      this.cameras.main.setRotation(
+      this.cameras.main.setZoom(0.3, 0.3);
+      /*this.cameras.main.setRotation(
         ((this.playerPos.x % 100000) / 100000) * 2 * Math.PI
-      );
+      );*/
     }
   }
 
@@ -331,8 +734,15 @@ export default class SceneMain extends Phaser.Scene {
       water < this.playerPos.y &&
       this.playerPos.y < terrain + 5
     ) {
-      this.scene.stop();
+      this.gameOver();
     }
+  }
+
+  gameOver() {
+    this.scene.run("SceneGameOver");
+    this.cameras.main.stopFollow();
+    this.gameIsOver = true;
+    this.missionMarker.setText("");
   }
 
   renderMarker() {
@@ -344,6 +754,12 @@ export default class SceneMain extends Phaser.Scene {
 
     this.missionMarkerGoLeft.x = minX + 200;
     this.missionMarkerGoRight.x = maxX - 400;
+
+    if (this.missions[this.activeMission].showMarker) {
+      this.missionMarker.setVisible(true);
+    } else {
+      this.missionMarker.setVisible(false);
+    }
 
     this.missionMarker.x = this.missions[this.activeMission].pos.x;
     this.missionMarker.y =
@@ -369,10 +785,9 @@ export default class SceneMain extends Phaser.Scene {
   }
 
   update(time, delta) {
-    this.text.setText(
-      parseInt(this.playerPos.x, 10) + " w " + this.renderMarker()
-    );
+    this.text.setText(parseInt(this.playerPos.x, 10));
     this.text.x = this.cameras.main.scrollX + this.width / 2;
+    this.text.y = 100;
 
     //Gravity
     this.playerAcc.y += 0.05;
@@ -387,17 +802,18 @@ export default class SceneMain extends Phaser.Scene {
     this.graphics.clear();
 
     this.renderTerrain();
+    this.renderMarker();
 
     this.checkPlayerCollision();
 
     this.setCameraZoom();
 
-    this.missions[this.activeMission].update();
+    if (this.gameIsOver) return;
+
+    melange -= 0.005;
+
+    this.missions[this.activeMission].update(time);
     this.missions[this.activeMission].success(this.playerPos);
-    this.missionTitle.x =
-      this.cameras.main.worldView.x + this.cameras.main.worldView.width - 100;
-    this.missionDescription.x =
-      this.cameras.main.worldView.x + this.cameras.main.worldView.width - 100;
 
     Phaser.Actions.ShiftPosition(
       this.player.getChildren(),
@@ -439,5 +855,144 @@ export default class SceneMain extends Phaser.Scene {
         this.calculateHeight(this.playerPos.x + offset)
       );
     }
+  }
+}
+
+export class SceneUI extends Phaser.Scene {
+  constructor() {
+    super({ key: "SceneUI" });
+  }
+
+  preload() {}
+
+  create() {
+    const { width, height } = this.sys.game.config;
+
+    this.width = width;
+    this.height = height;
+
+    this.instructions = this.add.text(
+      10,
+      120,
+      "Use the up and down to navigate the dunes.\nYou have light control with left and right keys.\nAvoid the water!\nHave fun!",
+      {
+        font: "2vh courier",
+        color: "white"
+      }
+    );
+
+    this.melangeText = this.add.text(10, 100, "Melange: 0", {
+      font: "2vh courier",
+      color: "white"
+    });
+
+    this.missionDescriptionText = "Hunt the invaders!";
+    this.missionTitle = this.add
+      .text(this.width, 100, "Mission #1", {
+        font: "5vh courier",
+        color: "white"
+      })
+      .setOrigin(1, 0);
+    this.missionDescription = this.add
+      .text(this.width, 135, "Hunt the invaders!", {
+        font: "3vh courier",
+        color: "white"
+      })
+      .setOrigin(1, 0);
+  }
+
+  update() {
+    if (missionDescription !== this.missionDescriptionText) {
+      this.missionDescriptionText = missionDescription;
+      this.missionTitle.setText(missionTitle);
+      this.missionDescription.setText(missionDescription);
+      this.instructions.setText("");
+    }
+
+    this.melangeText.setText(`Melange: ${parseInt(melange, 10)}`);
+  }
+}
+
+export class SceneGameWon extends Phaser.Scene {
+  constructor() {
+    super({ key: "SceneGameWon" });
+  }
+
+  preload() {}
+
+  create() {
+    const { width, height } = this.sys.game.config;
+
+    this.width = width;
+    this.height = height;
+
+    this.text = this.add
+      .text(width / 2, height / 2, "You have joined HIM, well done :)", {
+        font: "4vw courier",
+        color: "white"
+      })
+      .setOrigin(0.5, 0.5);
+
+    this.enterText = this.add
+      .text(
+        width / 2,
+        (height * 4) / 5,
+        "You have accumulated " +
+          parseInt(melange, 10) +
+          " melange\nand finished the game! Thanks for playing\nShare your feedback :)",
+        {
+          font: "3vw courier",
+          color: "white"
+        }
+      )
+      .setOrigin(0.5, 0.5);
+  }
+}
+
+export class SceneGameOver extends Phaser.Scene {
+  constructor() {
+    super({ key: "SceneGameOver" });
+  }
+
+  preload() {}
+
+  create() {
+    const { width, height } = this.sys.game.config;
+
+    this.width = width;
+    this.height = height;
+
+    this.text = this.add
+      .text(width / 2, height / 2, "Your body can't survive the water", {
+        font: "4vw courier",
+        color: "white"
+      })
+      .setOrigin(0.5, 0.5);
+
+    this.theText = this.add
+      .text(
+        width / 2,
+        (height * 2) / 3,
+        "You have accumulated " + parseInt(melange, 10) + " melange",
+        {
+          font: "3vw courier",
+          color: "white"
+        }
+      )
+      .setOrigin(0.5, 0.5);
+
+    this.enterText = this.add
+      .text(width / 2, (height * 4) / 5, "Press 'r' to restart", {
+        font: "3vw courier",
+        color: "white"
+      })
+      .setOrigin(0.5, 0.5);
+
+    const keyObj = this.input.keyboard.addKey("R"); // Get key object
+    keyObj.on("down", (event) => {
+      this.scene.stop("SceneMain");
+      this.scene.stop("SceneUI");
+      this.scene.start("SceneMainMenu");
+    });
   }
 }

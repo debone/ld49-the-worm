@@ -13,10 +13,11 @@ export default class SceneMainMenu extends Phaser.Scene {
     );
 
     this.load.image("player", "assets/sprites/player.png");
+    this.load.image("fremen", "assets/sprites/fremen.png");
+    this.load.image("cave", "assets/sprites/cave.png");
   }
 
   create() {
-    //this.scene.start("SceneMain");
     this.noise = this.plugins.get("rexperlinplugin").add(5);
 
     const { width, height } = this.sys.game.config;
@@ -36,7 +37,8 @@ export default class SceneMainMenu extends Phaser.Scene {
         font: "3vh courier",
         color: "white"
       })
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setVisible(false);
 
     this.player = this.add.group({
       key: "player",
@@ -101,7 +103,7 @@ export default class SceneMainMenu extends Phaser.Scene {
       this.playerPos.y = this.height - 250 * Math.random();
       this.playerAcc = new Phaser.Math.Vector2(10 * Math.random(), 0);
 
-      this.enterText;
+      this.enterText.setVisible(true);
     }
 
     this.graphics.clear();

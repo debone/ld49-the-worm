@@ -1,8 +1,12 @@
 import Phaser from "phaser";
 
-import SceneGameOver from "./js/SceneGameOver";
 import SceneMainMenu from "./js/SceneMainMenu";
-import SceneMain from "./js/SceneMain";
+import {
+  SceneMain,
+  SceneUI,
+  SceneGameOver,
+  SceneGameWon
+} from "./js/SceneMain";
 
 const config = {
   type: Phaser.AUTO,
@@ -18,7 +22,7 @@ const config = {
   physics: {
     default: "arcade"
   },
-  scene: [SceneMainMenu, SceneMain, SceneGameOver]
+  scene: [SceneMainMenu, SceneMain, SceneUI, SceneGameWon, SceneGameOver]
 };
 
 const game = new Phaser.Game(config);
